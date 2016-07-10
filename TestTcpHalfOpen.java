@@ -21,6 +21,10 @@ class TestTcpHalfOpen {
 	private static final SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	public static stdoutPrinter stdoutPrinter;
 
+	// This object _should_ be per thread, according to:
+	// https://hc.apache.org/httpcomponents-client-4.5.x/tutorial/html/connmgmt.html#d5e405
+	private static HttpContext[] httpContextPool;
+
 	public static void main(String[] args) throws Exception {
 		new TestTcpHalfOpen(args);
 		return;
@@ -67,11 +71,19 @@ class TestTcpHalfOpen {
 		 * }
 		 */
 
+		// Create two httpClientContexts and expect each thread to swap between them
+		// This is in deliberate violation of
+		//   https://hc.apache.org/httpcomponents-client-4.5.x/tutorial/html/connmgmt.html#d5e405
+		httpContextPool = new HttpContext[2];
+		for( int i=0; i<2; i++ ) {
+			httpContextPool[i] = HttpClientContext.create();
+		}
+		
 		// Create a httpClientThread thread for each URI
 		httpClientThread[] threads = new httpClientThread[urisToGet.length];
 		for( int i=0; i<threads.length; i++ ) {
 			HttpGet httpget = new HttpGet(urisToGet[i]);
-			threads[i] = new httpClientThread(httpClient, httpget);
+			threads[i] = new httpClientThread(httpClient, httpget, i);
 			threads[i].setName("HttpClient Thread #" + i);
 		}
 
@@ -107,13 +119,13 @@ class TestTcpHalfOpen {
 	static class httpClientThread extends Thread {
 
 		private final CloseableHttpClient httpClient;
-		private final HttpContext context;
 		private final HttpGet httpget;
+		private final int threadNumber;
 
-		public httpClientThread(CloseableHttpClient httpClient, HttpGet httpget) {
+		public httpClientThread(CloseableHttpClient httpClient, HttpGet httpget, int threadNumber) {
 			this.httpClient = httpClient;
-			this.context = HttpClientContext.create();
 			this.httpget = httpget;
+			this.threadNumber = threadNumber;
 		}
 
 		@Override
@@ -134,9 +146,10 @@ class TestTcpHalfOpen {
 						iteration + 
 						" is about to call [" +
 						httpget.getURI() +
-						"]");
+						"] using context " +
+						(threadNumber+iteration)%2 );
 					response = httpClient.execute(
-						httpget, context);
+						httpget, httpContextPool[(threadNumber+iteration)%2]);
 					entity = response.getEntity();
 					instream = entity.getContent();
 					finalInput = new String(sdfDate.format(new Date()) + 
