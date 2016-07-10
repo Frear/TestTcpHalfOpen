@@ -228,6 +228,10 @@ class TestTcpHalfOpen {
 	}
 
 
+	/**
+	 * Threads were stepping on themselves as they printed their output.
+	 * Forcing a lock to be held to access System.out addresses that.
+	 */
 	class stdoutPrinter {
 		private Boolean lock = new Boolean(false);
 
