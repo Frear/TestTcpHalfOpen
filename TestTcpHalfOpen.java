@@ -18,6 +18,7 @@ class TestTcpHalfOpen {
 	private static final long TOTAL_LIFETIME = 60000;
 	private static final long DELAY_BETWEEN_REQUESTS = 17000;
 	private static final SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	public static stdoutPrinter stdoutPrinter;
 
 	public static void main(String[] args) throws Exception {
 		new TestTcpHalfOpen(args);
@@ -32,6 +33,7 @@ class TestTcpHalfOpen {
 	 * - Wait 60 seconds after all threads have finished
 	 */
 	TestTcpHalfOpen(String[] args) throws Exception {
+		this.stdoutPrinter = new stdoutPrinter();
 		PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
 		String[] urisToGet;
 
@@ -87,7 +89,7 @@ class TestTcpHalfOpen {
 			threads[j].join();
 		}
 
-		System.out.println(sdfDate.format(new Date()) +
+		this.stdoutPrinter.println(sdfDate.format(new Date()) +
 			" All httpClientThreads have exited!");
 		//System.out.println(cm.getTotalStats().toString());
 
@@ -124,7 +126,7 @@ class TestTcpHalfOpen {
 
 			try {
 				for(int iteration=0; iteration<2; iteration++) {
-					System.out.println(sdfDate.format(new Date()) + 
+					stdoutPrinter.println(sdfDate.format(new Date()) + 
 						" httpClientThread " +
 						threadName +
 						" iteration " + 
@@ -144,11 +146,11 @@ class TestTcpHalfOpen {
 						inputByte=(char) instream.read();
 						if( inputByte >= 32 && inputByte <= 126 )
 							finalInput = new String(finalInput + inputByte);
-							//System.out.print(inputByte);
+							//stdoutPrinter.print(inputByte);
 					}
 					finalInput = new String(finalInput + "]");
-					//System.out.println("]");
-					System.out.println(finalInput);
+					//stdoutPrinter.println("]");
+					stdoutPrinter.println(finalInput);
 					/*******************************************/
 					/*    InputStream.close() is MANDATORY!    */
 					/*******************************************/
@@ -156,7 +158,7 @@ class TestTcpHalfOpen {
 					try {
 						Thread.sleep(DELAY_BETWEEN_REQUESTS);
 					} catch (InterruptedException ex) {
-						System.out.println(sdfDate.format(new Date()) +
+						stdoutPrinter.println(sdfDate.format(new Date()) +
 							" httpClientThread " +
 							threadName +
 							" had interrupted sleep " +
@@ -166,7 +168,7 @@ class TestTcpHalfOpen {
 				}
 			} catch (ClientProtocolException ex) {
 				// Handle protocol errors
-				System.out.println(sdfDate.format(new Date()) +
+				stdoutPrinter.println(sdfDate.format(new Date()) +
 					" httpClientThread " +
 					threadName +
 					" caught Protocol exception " +
@@ -174,14 +176,14 @@ class TestTcpHalfOpen {
 				ex.printStackTrace();
 			} catch (IOException ex) {
 				// Handle I/O errors
-				System.out.println(sdfDate.format(new Date()) +
+				stdoutPrinter.println(sdfDate.format(new Date()) +
 					" httpClientThread " +
 					threadName +
 					" caught I/O exception " +
 					ex);
 				ex.printStackTrace();
 			} finally {
-				System.out.println(sdfDate.format(new Date()) +
+				stdoutPrinter.println(sdfDate.format(new Date()) +
 					" httpClientThread " +
 					threadName +
 					" is no more.");
@@ -210,17 +212,37 @@ class TestTcpHalfOpen {
 		@Override
 		public void run() {
 			for(long iteration=0; iteration<numIterations; iteration++) {
-				System.out.println(sdfDate.format(new Date()) +
+				stdoutPrinter.println(sdfDate.format(new Date()) +
 					" HttpClient threadpool stats: " + 
 					cm.getTotalStats().toString());
 				try {
 					Thread.sleep(interval);
 				} catch(InterruptedException ex) {
-					System.out.println(sdfDate.format(new Date()) +
+					stdoutPrinter.println(sdfDate.format(new Date()) +
 						" stats thread sleep interrupted " +
 						ex);
 					ex.printStackTrace();
 				}
+			}
+		}
+	}
+
+
+	class stdoutPrinter {
+		private Boolean lock = new Boolean(false);
+
+		public stdoutPrinter() {
+		}
+
+		public void print(String message) {
+			synchronized(lock) {
+				System.out.print(message);
+			}
+		}
+
+		public void println(String message) {
+			synchronized(lock) {
+				System.out.println(message);
 			}
 		}
 	}
