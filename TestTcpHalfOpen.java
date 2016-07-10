@@ -17,6 +17,7 @@ class TestTcpHalfOpen {
 	private static final long STATS_INTERVAL = 2000;
 	private static final long TOTAL_LIFETIME = 60000;
 	private static final long DELAY_BETWEEN_REQUESTS = 17000;
+	private static final long TOTAL_ITERATIONS = 2;
 	private static final SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	public static stdoutPrinter stdoutPrinter;
 
@@ -125,7 +126,7 @@ class TestTcpHalfOpen {
 			String finalInput;
 
 			try {
-				for(int iteration=0; iteration<2; iteration++) {
+				for(int iteration=0; iteration<TOTAL_ITERATIONS; iteration++) {
 					stdoutPrinter.println(sdfDate.format(new Date()) + 
 						" httpClientThread " +
 						threadName +
